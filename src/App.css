@@ -1,0 +1,48 @@
+
+body {
+    background-color: #f8f9fa;
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.gantt-container .bar-wrapper.is-dragging {
+    opacity: 0.8;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem;
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    background-color: #fff;
+}
+
+.gantt-popup {
+    background-color: #fff !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    border-radius: 0.3rem !important;
+}
+
+.table-nowrap {
+    white-space: nowrap;
+}
+
+.table {
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+}
+
+.gantt-card-body {
+    max-height: 65vh; /* 65% of the viewport height */
+    overflow: auto;
+}
+

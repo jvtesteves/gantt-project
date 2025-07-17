@@ -135,6 +135,6 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server is running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server is running on http://0.0.0.0:${PORT}`);
 });

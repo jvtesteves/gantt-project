@@ -1,0 +1,39 @@
+# 🔧 Configuração de Deploy - Gantt Project
+# Copie este arquivo para deploy.config e preencha com seus valores
+
+# =============================================================================
+# CONFIGURAÇÕES DO EC2 (Backend)
+# =============================================================================
+EC2_HOST="seu-ip-publico-ec2"
+EC2_USER="ec2-user"
+EC2_KEY_PATH="/caminho/para/sua-chave.pem"
+
+# =============================================================================
+# CONFIGURAÇÕES DO S3 (Frontend)
+# =============================================================================
+S3_BUCKET="seu-bucket-frontend"
+AWS_REGION="us-east-1"
+
+# =============================================================================
+# CONFIGURAÇÕES DO CLOUDFRONT (Opcional)
+# =============================================================================
+CLOUDFRONT_DISTRIBUTION_ID="E1234567890ABC"
+CLOUDFRONT_DOMAIN="d1234567890abcd.cloudfront.net"
+
+# =============================================================================
+# CONFIGURAÇÕES DO RDS (Banco de Dados)
+# =============================================================================
+RDS_ENDPOINT="gantt-db.abcd1234.us-east-1.rds.amazonaws.com"
+RDS_PORT="5432"
+RDS_DB_NAME="gantt_project"
+RDS_USERNAME="postgres"
+RDS_PASSWORD="SuaSenhaSegura123"
+
+# =============================================================================
+# CONFIGURAÇÕES ADICIONAIS
+# =============================================================================
+# Slack webhook para notificações (opcional)
+SLACK_WEBHOOK_URL=""
+
+# Email para notificações de erro (opcional)
+NOTIFICATION_EMAIL=""

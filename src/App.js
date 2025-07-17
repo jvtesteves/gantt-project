@@ -3,7 +3,7 @@ import Gantt from 'frappe-gantt';
 import '../node_modules/frappe-gantt/dist/frappe-gantt.css';
 import './App.css';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 // --- Helper for dynamic CSS styles --- //
 const StyleManager = {

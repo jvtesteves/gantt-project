@@ -25,10 +25,24 @@ const initDatabase = async (pool) => {
         end_date DATE NOT NULL,
         progress INTEGER DEFAULT 0,
         dependencies TEXT DEFAULT '',
+        color VARCHAR(7) DEFAULT '#0288d1',
+        custom_class TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add color and custom_class columns if they don't exist (migration)
+    try {
+      await pool.query(`
+        ALTER TABLE tasks 
+        ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#0288d1',
+        ADD COLUMN IF NOT EXISTS custom_class TEXT
+      `);
+      console.log('✅ Color columns added/checked successfully');
+    } catch (error) {
+      console.log('⚠️ Color columns migration note:', error.message);
+    }
 
     // Create indexes for better performance
     await pool.query(`

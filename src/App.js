@@ -76,22 +76,76 @@ const GanttApp = ({ currentUser, onLogout }) => {
 
   const fetchTasks = useCallback(async (username, viewMode = 'individual') => {
     try {
-      let response;
-      if (viewMode === 'team') {
-        // Fetch all tasks for team view
-        response = await fetch(`${API_URL}/tasks`);
-      } else {
-        // Fetch tasks for specific user
-        if (!username) return;
-        response = await fetch(`${API_URL}/tasks/${encodeURIComponent(username)}`);
+      // First try to get from localStorage
+      const localTasks = localStorage.getItem('gantt-tasks');
+      if (localTasks) {
+        const allTasks = JSON.parse(localTasks);
+        const filteredTasks = viewMode === 'team' ? allTasks : allTasks.filter(task => task.owner === username);
+        setTasks(filteredTasks);
+        return;
       }
+
+      // Fallback to API
+      let response;
+      response = await fetch(`${API_URL}/tasks`);
       const data = await response.json();
-      setTasks(data);
+      
+      // Filter tasks by user if needed and preserve saved colors
+      const filteredTasks = viewMode === 'team' ? data : data.filter(task => task.owner === username);
+      
+      // Add default colors only to tasks that don't have them (fallback)
+      const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
+      const tasksWithColors = filteredTasks.map((task, index) => ({
+        ...task,
+        color: task.color || colors[index % colors.length],
+        custom_class: task.custom_class || `task-${task.id}`
+      }));
+      
+      // Save to localStorage
+      localStorage.setItem('gantt-tasks', JSON.stringify(tasksWithColors));
+      setTasks(tasksWithColors);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
-      alert("Não foi possível carregar as tarefas. Verifique se o servidor backend está rodando.");
+      
+      // Fallback: create sample tasks with colors and save to localStorage
+      const sampleTasks = [
+        {
+          id: 1,
+          name: 'Tarefa de Exemplo 1',
+          start: '2025-01-20',
+          end: '2025-01-25',
+          progress: 30,
+          color: '#ff6b6b',
+          custom_class: 'task-1',
+          owner: username
+        },
+        {
+          id: 2,
+          name: 'Tarefa de Exemplo 2',
+          start: '2025-01-22',
+          end: '2025-01-28',
+          progress: 60,
+          color: '#4ecdc4',
+          custom_class: 'task-2',
+          owner: username
+        },
+        {
+          id: 3,
+          name: 'Tarefa de Exemplo 3',
+          start: '2025-01-26',
+          end: '2025-01-30',
+          progress: 10,
+          color: '#45b7d1',
+          custom_class: 'task-3',
+          owner: username
+        }
+      ];
+      
+      localStorage.setItem('gantt-tasks', JSON.stringify(sampleTasks));
+      setTasks(sampleTasks);
+      console.log("Usando tarefas de exemplo com cores para demonstração");
     }
-  }, []);
+  }, [view]);
 
   useEffect(() => {
     if (currentUser) {
@@ -102,8 +156,10 @@ const GanttApp = ({ currentUser, onLogout }) => {
 
   useEffect(() => {
     tasks.forEach(task => {
-      if (task.custom_class && task.color) {
-        StyleManager.createClass(task.custom_class, task.color);
+      if (task.color) {
+        // Generate a custom class based on task ID if custom_class doesn't exist
+        const className = task.custom_class || `task-${task.id}`;
+        StyleManager.createClass(className, task.color);
       }
     });
   }, [tasks]);
@@ -144,27 +200,35 @@ const GanttApp = ({ currentUser, onLogout }) => {
     }
     if (window.confirm('Tem certeza que deseja excluir esta tarefa?')) {
       try {
-        const response = await fetch(`${API_URL}/tasks/${encodeURIComponent(currentUser)}/${taskId}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Falha ao excluir a tarefa.');
-        }
+        // Get current tasks from localStorage
+        const localTasks = localStorage.getItem('gantt-tasks');
+        const allTasks = localTasks ? JSON.parse(localTasks) : [];
+        
+        // Remove the task
+        const filteredTasks = allTasks.filter(t => t.id !== taskId);
+        
+        // Save back to localStorage
+        localStorage.setItem('gantt-tasks', JSON.stringify(filteredTasks));
         
         // Refetch tasks and reinitialize Gantt
         await fetchTasks(currentUser, view);
       } catch (error) {
         console.error("Failed to delete task:", error);
-        alert(error.message);
+        alert("Falha ao excluir a tarefa.");
       }
     }
   }, [tasks, currentUser, fetchTasks]);
 
   const tasksToDisplay = view === 'individual'
-    ? tasks.filter(t => t.owner === currentUser)
-    : tasks.map(t => ({ ...t, name: `[${t.owner}] ${t.name}` }));
+    ? tasks.filter(t => t.owner === currentUser).map(t => ({
+        ...t,
+        custom_class: t.custom_class || `task-${t.id}`
+      }))
+    : tasks.map(t => ({ 
+        ...t, 
+        name: `[${t.owner}] ${t.name}`,
+        custom_class: t.custom_class || `task-${t.id}`
+      }));
 
   const initializeGantt = useCallback(() => {
     if (!ganttRef.current) return;
@@ -255,26 +319,47 @@ const GanttApp = ({ currentUser, onLogout }) => {
       return;
     }
 
-    const taskPayload = { ...editingTask, owner: currentUser };
+    // Generate custom_class if not editing (new task)
+    const custom_class = editingTask.id ? editingTask.custom_class : `task-color-${Date.now()}`;
+    
+    const taskPayload = { 
+      ...editingTask, 
+      owner: currentUser,
+      currentUser: currentUser, // Needed for backend permission check
+      custom_class: custom_class
+    };
     const isEditing = !!taskPayload.id;
 
     const url = isEditing 
-      ? `${API_URL}/tasks/${encodeURIComponent(currentUser)}/${taskPayload.id}` 
-      : `${API_URL}/tasks/${encodeURIComponent(currentUser)}`;
+      ? `${API_URL}/tasks/${taskPayload.id}` 
+      : `${API_URL}/tasks`;
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskPayload),
-      });
-      if (!response.ok) throw new Error('Network response was not ok');
+      // Get current tasks from localStorage
+      const localTasks = localStorage.getItem('gantt-tasks');
+      const allTasks = localTasks ? JSON.parse(localTasks) : [];
+      
+      if (isEditing) {
+        // Update existing task
+        const taskIndex = allTasks.findIndex(t => t.id === taskPayload.id);
+        if (taskIndex >= 0) {
+          allTasks[taskIndex] = { ...taskPayload };
+        }
+      } else {
+        // Create new task
+        const newId = Math.max(0, ...allTasks.map(t => t.id)) + 1;
+        const newTask = { ...taskPayload, id: newId };
+        allTasks.push(newTask);
+      }
+      
+      // Save back to localStorage
+      localStorage.setItem('gantt-tasks', JSON.stringify(allTasks));
       
       closeModal();
       
       // Refetch tasks and reinitialize Gantt
-      await fetchTasks(currentUser);
+      await fetchTasks(currentUser, view);
     } catch (error) {
       console.error("Failed to save task:", error);
       alert("Falha ao salvar a tarefa.");

@@ -11,7 +11,7 @@ router.get('/', optionalAuth, async (req, res) => {
     // Get all tasks with user information
     const tasksResult = await db.query(`
       SELECT t.id, t.name, t.start_date, t.end_date, t.progress, t.dependencies, 
-             t.created_at, t.updated_at, u.full_name, u.username
+             t.color, t.custom_class, t.created_at, t.updated_at, u.full_name, u.username
       FROM tasks t
       JOIN users u ON t.user_id = u.id
       ORDER BY t.start_date ASC, u.full_name ASC
@@ -24,6 +24,8 @@ router.get('/', optionalAuth, async (req, res) => {
       end: task.end_date.toISOString().split('T')[0],
       progress: task.progress,
       dependencies: task.dependencies,
+      color: task.color || '#0288d1',
+      custom_class: task.custom_class,
       owner: task.full_name || task.username, // Add owner field for frontend compatibility
       createdAt: task.created_at,
       updatedAt: task.updated_at
@@ -57,7 +59,7 @@ router.get('/:username', optionalAuth, async (req, res) => {
     // Get tasks for the user
     const tasksResult = await db.query(`
       SELECT t.id, t.name, t.start_date, t.end_date, t.progress, t.dependencies, 
-             t.created_at, t.updated_at, u.full_name, u.username
+             t.color, t.custom_class, t.created_at, t.updated_at, u.full_name, u.username
       FROM tasks t
       JOIN users u ON t.user_id = u.id
       WHERE t.user_id = $1
@@ -71,6 +73,8 @@ router.get('/:username', optionalAuth, async (req, res) => {
       end: task.end_date.toISOString().split('T')[0],
       progress: task.progress,
       dependencies: task.dependencies,
+      color: task.color || '#0288d1',
+      custom_class: task.custom_class,
       owner: task.full_name || task.username, // Add owner field for frontend compatibility
       createdAt: task.created_at,
       updatedAt: task.updated_at
@@ -87,7 +91,7 @@ router.get('/:username', optionalAuth, async (req, res) => {
 router.post('/:username', optionalAuth, async (req, res) => {
   try {
     const { username } = req.params;
-    const { name, start, end, progress = 0, dependencies = '' } = req.body;
+    const { name, start, end, progress = 0, dependencies = '', color = '#0288d1', custom_class } = req.body;
     const db = req.app.locals.db;
 
     // Validate required fields
@@ -111,10 +115,10 @@ router.post('/:username', optionalAuth, async (req, res) => {
 
     // Create task
     const result = await db.query(`
-      INSERT INTO tasks (user_id, name, start_date, end_date, progress, dependencies)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, name, start_date, end_date, progress, dependencies, created_at, updated_at
-    `, [userId, name, start, end, progress, dependencies]);
+      INSERT INTO tasks (user_id, name, start_date, end_date, progress, dependencies, color, custom_class)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, name, start_date, end_date, progress, dependencies, color, custom_class, created_at, updated_at
+    `, [userId, name, start, end, progress, dependencies, color, custom_class]);
 
     const task = result.rows[0];
 
@@ -127,6 +131,8 @@ router.post('/:username', optionalAuth, async (req, res) => {
         end: task.end_date.toISOString().split('T')[0],
         progress: task.progress,
         dependencies: task.dependencies,
+        color: task.color,
+        custom_class: task.custom_class,
         createdAt: task.created_at,
         updatedAt: task.updated_at
       }
@@ -141,7 +147,7 @@ router.post('/:username', optionalAuth, async (req, res) => {
 router.put('/:username/:taskId', optionalAuth, async (req, res) => {
   try {
     const { username, taskId } = req.params;
-    const { name, start, end, progress, dependencies } = req.body;
+    const { name, start, end, progress, dependencies, color, custom_class } = req.body;
     const db = req.app.locals.db;
 
     // Find user
@@ -191,6 +197,18 @@ router.put('/:username/:taskId', optionalAuth, async (req, res) => {
       paramCount++;
     }
 
+    if (color !== undefined) {
+      updates.push(`color = $${paramCount}`);
+      values.push(color);
+      paramCount++;
+    }
+
+    if (custom_class !== undefined) {
+      updates.push(`custom_class = $${paramCount}`);
+      values.push(custom_class);
+      paramCount++;
+    }
+
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
@@ -202,7 +220,7 @@ router.put('/:username/:taskId', optionalAuth, async (req, res) => {
       UPDATE tasks 
       SET ${updates.join(', ')}
       WHERE user_id = $${paramCount} AND id = $${paramCount + 1}
-      RETURNING id, name, start_date, end_date, progress, dependencies, created_at, updated_at
+      RETURNING id, name, start_date, end_date, progress, dependencies, color, custom_class, created_at, updated_at
     `, values);
 
     if (result.rows.length === 0) {
@@ -220,6 +238,8 @@ router.put('/:username/:taskId', optionalAuth, async (req, res) => {
         end: task.end_date.toISOString().split('T')[0],
         progress: task.progress,
         dependencies: task.dependencies,
+        color: task.color,
+        custom_class: task.custom_class,
         createdAt: task.created_at,
         updatedAt: task.updated_at
       }

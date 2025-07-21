@@ -187,17 +187,43 @@ body {
 /* === GANTT BARS DARK THEME === */
 [data-theme="dark"] .gantt-container .bar-wrapper .bar {
     opacity: 1 !important;
-    filter: brightness(1.2) saturate(1.1) !important;
+    filter: none !important;
+    stroke: #ffffff !important;
+    stroke-width: 1 !important;
 }
 
 [data-theme="dark"] .gantt-container .bar-wrapper .bar-progress {
-    opacity: 0.8 !important;
-    filter: brightness(1.1) !important;
+    opacity: 0.9 !important;
+    filter: none !important;
 }
 
 [data-theme="dark"] .gantt-container .bar-wrapper .bar-label {
-    fill: var(--text-primary) !important;
-    font-weight: 500 !important;
+    fill: #ffffff !important;
+    font-weight: 600 !important;
+    stroke: none !important;
+}
+
+/* === FORCE GANTT BAR VISIBILITY === */
+[data-theme="dark"] .gantt .bar {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+[data-theme="dark"] .gantt .bar-progress {
+    opacity: 0.8 !important;
+    visibility: visible !important;
+}
+
+/* === GANTT SVG ELEMENTS === */
+[data-theme="dark"] svg .bar {
+    opacity: 1 !important;
+    filter: brightness(1.3) !important;
+}
+
+[data-theme="dark"] svg rect[fill] {
+    opacity: 1 !important;
+    filter: brightness(1.2) contrast(1.1) !important;
 }
 
 /* === GANTT GRID LINES === */

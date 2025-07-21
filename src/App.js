@@ -74,10 +74,17 @@ const GanttApp = ({ currentUser, onLogout }) => {
     return `${day}/${month}/${year}`;
   };
 
-  const fetchTasks = useCallback(async (username) => {
-    if (!username) return;
+  const fetchTasks = useCallback(async (username, viewMode = 'individual') => {
     try {
-      const response = await fetch(`${API_URL}/tasks/${encodeURIComponent(username)}`);
+      let response;
+      if (viewMode === 'team') {
+        // Fetch all tasks for team view
+        response = await fetch(`${API_URL}/tasks`);
+      } else {
+        // Fetch tasks for specific user
+        if (!username) return;
+        response = await fetch(`${API_URL}/tasks/${encodeURIComponent(username)}`);
+      }
       const data = await response.json();
       setTasks(data);
     } catch (error) {
@@ -88,10 +95,10 @@ const GanttApp = ({ currentUser, onLogout }) => {
 
   useEffect(() => {
     if (currentUser) {
-      fetchTasks(currentUser);
+      fetchTasks(currentUser, view);
     }
     StyleManager.init();
-  }, [fetchTasks, currentUser]);
+  }, [fetchTasks, currentUser, view]);
 
   useEffect(() => {
     tasks.forEach(task => {
@@ -147,7 +154,7 @@ const GanttApp = ({ currentUser, onLogout }) => {
         }
         
         // Refetch tasks and reinitialize Gantt
-        await fetchTasks(currentUser);
+        await fetchTasks(currentUser, view);
       } catch (error) {
         console.error("Failed to delete task:", error);
         alert(error.message);

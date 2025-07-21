@@ -3,6 +3,39 @@ const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Get all tasks from all users (for team view)
+router.get('/', optionalAuth, async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    
+    // Get all tasks with user information
+    const tasksResult = await db.query(`
+      SELECT t.id, t.name, t.start_date, t.end_date, t.progress, t.dependencies, 
+             t.created_at, t.updated_at, u.full_name, u.username
+      FROM tasks t
+      JOIN users u ON t.user_id = u.id
+      ORDER BY t.start_date ASC, u.full_name ASC
+    `);
+
+    const tasks = tasksResult.rows.map(task => ({
+      id: task.id,
+      name: task.name,
+      start: task.start_date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      end: task.end_date.toISOString().split('T')[0],
+      progress: task.progress,
+      dependencies: task.dependencies,
+      owner: task.full_name || task.username, // Add owner field for frontend compatibility
+      createdAt: task.created_at,
+      updatedAt: task.updated_at
+    }));
+
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error fetching all tasks:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
 // Get all tasks for a user
 router.get('/:username', optionalAuth, async (req, res) => {
   try {

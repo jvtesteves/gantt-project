@@ -1,15 +1,41 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const taskRoutes = require('./routes/tasks');
+
+// Import database utilities
+const { initDatabase } = require('./utils/database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "*",
+  credentials: true
+}));
 
-// PostgreSQL Connection Pool - AWS RDS compatible
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+app.use('/api/', limiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Database connection
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
@@ -22,119 +48,59 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-// Configure CORS for production
-const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : ['http://localhost:3000']; // Default to localhost for development
+// Make pool available to routes
+app.locals.db = pool;
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  }
-}));
-
-// --- API Endpoints ---
-
-// Get all users
-app.get('/api/users', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT name FROM users');
-    res.json(result.rows.map(row => row.name));
-  } catch (err) {
-    console.error('Error fetching users:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    version: '2.0.0'
+  });
 });
 
-// Get all tasks
-app.get('/api/tasks', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, name, start_date AS start, due_date AS end, progress, color, custom_class, owner FROM tasks');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching tasks:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tasks', taskRoutes);
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Error:', error);
+  res.status(error.status || 500).json({
+    error: process.env.NODE_ENV === 'production' 
+      ? 'Something went wrong!' 
+      : error.message
+  });
 });
 
-// Create a new task
-app.post('/api/tasks', async (req, res) => {
-  const { name, start, end, progress, color, custom_class, owner } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO tasks (name, start_date, due_date, progress, color, custom_class, owner) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [name, start, end, progress || 0, color || '#0288d1', custom_class, owner]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating task:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
-// Update a task
-app.put('/api/tasks/:id', async (req, res) => {
-  const taskId = req.params.id;
-  const { name, start, end, progress, color, custom_class, owner, currentUser } = req.body; // Get currentUser from request body
-
-  try {
-    // First, check if the task exists and belongs to the currentUser
-    const taskCheck = await pool.query('SELECT owner FROM tasks WHERE id = $1', [taskId]);
-    if (taskCheck.rows.length === 0) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-    if (taskCheck.rows[0].owner !== currentUser) {
-      return res.status(403).json({ message: 'Você não tem permissão para editar esta tarefa.' });
-    }
-
-    // If authorized, proceed with update
-    const result = await pool.query(
-      'UPDATE tasks SET name = $1, start_date = $2, due_date = $3, progress = $4, color = $5, custom_class = $6, owner = $7 WHERE id = $8 RETURNING *',
-      [name, start, end, progress, color, custom_class, owner, taskId]
-    );
-    if (result.rows.length === 0) {
-      // This case should ideally not be reached if taskCheck passed, but as a fallback
-      return res.status(404).json({ message: 'Task not found after check.' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error updating task:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down gracefully...');
+  await pool.end();
+  process.exit(0);
 });
 
-// Delete a task
-app.delete('/api/tasks/:id', async (req, res) => {
-  const taskId = req.params.id;
-  const { currentUser } = req.body; // Get currentUser from request body
-
+// Start server
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`🚀 Backend server is running on http://0.0.0.0:${PORT}`);
+  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Test database connection and initialize
   try {
-    // First, check if the task exists and belongs to the currentUser
-    const taskCheck = await pool.query('SELECT owner FROM tasks WHERE id = $1', [taskId]);
-    if (taskCheck.rows.length === 0) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-    if (taskCheck.rows[0].owner !== currentUser) {
-      return res.status(403).json({ message: 'Você não tem permissão para excluir esta tarefa.' });
-    }
-
-    // If authorized, proceed with deletion
-    const result = await pool.query('DELETE FROM tasks WHERE id = $1 RETURNING id', [taskId]);
-    if (result.rows.length === 0) {
-      // This case should ideally not be reached if taskCheck passed, but as a fallback
-      return res.status(404).json({ message: 'Task not found after check.' });
-    }
-    res.status(204).send(); // No Content
-  } catch (err) {
-    console.error('Error deleting task:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    const client = await pool.connect();
+    console.log('✅ Database connected successfully');
+    client.release();
+    
+    // Initialize database tables and data
+    await initDatabase(pool);
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
   }
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend server is running on http://0.0.0.0:${PORT}`);
 });

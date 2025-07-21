@@ -1,6 +1,40 @@
 
+/* === LIGHT THEME (DEFAULT) === */
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --border-color: #dee2e6;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --hover-bg: rgba(0, 0, 0, 0.05);
+    --table-striped: rgba(0, 0, 0, 0.02);
+    --gantt-bg: #ffffff;
+    --modal-backdrop: rgba(0, 0, 0, 0.5);
+}
+
+/* === DARK THEME === */
+[data-theme="dark"] {
+    --bg-primary: #1a1d23;
+    --bg-secondary: #2c3034;
+    --bg-tertiary: #3a3f44;
+    --text-primary: #ffffff;
+    --text-secondary: #adb5bd;
+    --text-muted: #6c757d;
+    --border-color: #495057;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --hover-bg: rgba(255, 255, 255, 0.1);
+    --table-striped: rgba(255, 255, 255, 0.05);
+    --gantt-bg: #2c3034;
+    --modal-backdrop: rgba(0, 0, 0, 0.8);
+}
+
 body {
-    background-color: #f8f9fa;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .btn {
@@ -8,7 +42,7 @@ body {
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--hover-bg);
 }
 
 .gantt-container .bar-wrapper.is-dragging {
@@ -21,16 +55,18 @@ body {
     align-items: center;
     justify-content: center;
     padding: 4rem;
-    border: 2px dashed #dee2e6;
+    border: 2px dashed var(--border-color);
     border-radius: 0.5rem;
-    background-color: #fff;
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
 }
 
 .gantt-popup {
-    background-color: #fff !important;
-    border: 1px solid #e9ecef !important;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 0.5rem 1rem var(--shadow) !important;
     border-radius: 0.3rem !important;
+    color: var(--text-primary) !important;
 }
 
 .table-nowrap {
@@ -38,11 +74,118 @@ body {
 }
 
 .table {
-    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+    --bs-table-striped-bg: var(--table-striped);
+    --bs-table-bg: var(--bg-secondary);
+    --bs-table-color: var(--text-primary);
+    --bs-table-border-color: var(--border-color);
 }
 
 .gantt-card-body {
-    max-height: 65vh; /* 65% of the viewport height */
+    max-height: 65vh;
     overflow: auto;
+}
+
+/* === CARD STYLES === */
+.card {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-bottom-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.card-footer {
+    background-color: var(--bg-tertiary) !important;
+    border-top-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+/* === MODAL STYLES === */
+.modal {
+    --bs-modal-bg: var(--bg-secondary);
+    --bs-modal-color: var(--text-primary);
+    --bs-modal-border-color: var(--border-color);
+    --bs-modal-header-border-color: var(--border-color);
+    --bs-modal-footer-border-color: var(--border-color);
+}
+
+.modal-backdrop {
+    background-color: var(--modal-backdrop) !important;
+}
+
+/* === FORM CONTROLS === */
+.form-control, .form-select {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg-secondary) !important;
+    border-color: #0d6efd !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* === BUTTON STYLES === */
+.btn-outline-secondary {
+    color: var(--text-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.btn-outline-secondary:hover, .btn-outline-secondary.active {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-light {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-light:hover {
+    background-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* === TEXT STYLES === */
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* === GANTT CHART DARK THEME === */
+[data-theme="dark"] .gantt-container {
+    filter: brightness(0.9) contrast(1.1);
+}
+
+[data-theme="dark"] .gantt-container .grid-background {
+    fill: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .gantt-container .grid-row {
+    fill: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .gantt-container .grid-header {
+    fill: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .gantt-container text {
+    fill: var(--text-primary) !important;
+}
+
+/* === ANIMATIONS === */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 

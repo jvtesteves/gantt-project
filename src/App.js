@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Gantt from 'frappe-gantt';
 import '../node_modules/frappe-gantt/dist/frappe-gantt.css';
 import './App.css';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -230,6 +231,7 @@ const GanttApp = ({ currentUser, onLogout }) => {
             <p className="mb-0 text-muted">Usuário: {currentUser} | Visão: {view === 'individual' ? 'Minhas Tarefas' : 'Equipe'}</p>
           </div>
           <div>
+            <ThemeToggle />
             <div className="btn-group me-2">
               <button className={`btn btn-sm btn-outline-secondary ${view === 'individual' && 'active'}`} onClick={() => setView('individual')}>Minhas Tarefas</button>
               <button className={`btn btn-sm btn-outline-secondary ${view === 'team' && 'active'}`} onClick={() => setView('team')}>Equipe</button>
@@ -312,6 +314,21 @@ const GanttApp = ({ currentUser, onLogout }) => {
   );
 };
 
+// --- Theme Toggle Component --- //
+const ThemeToggle = () => {
+  const { toggleTheme, isDark } = useTheme();
+
+  return (
+    <button 
+      className="btn btn-outline-secondary btn-sm me-2" 
+      onClick={toggleTheme}
+      title={`Alternar para modo ${isDark ? 'claro' : 'escuro'}`}
+    >
+      {isDark ? '☀️' : '🌙'}
+    </button>
+  );
+};
+
 // --- App Component with Login Logic --- //
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -348,4 +365,13 @@ const App = () => {
   return <GanttApp currentUser={currentUser} onLogout={handleLogout} />;
 };
 
-export default App;
+// --- Main App with Theme Provider --- //
+const AppWithTheme = () => {
+  return (
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  );
+};
+
+export default AppWithTheme;

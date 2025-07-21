@@ -19,7 +19,11 @@ const PORT = process.env.PORT || 3001;
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: [
+    "http://localhost:3000",
+    "http://gantt-v2-frontend-20250716212001.s3-website-us-east-1.amazonaws.com",
+    "http://gantt-project-frontend-202507162041.s3-website-us-east-1.amazonaws.com"
+  ],
   credentials: true
 }));
 

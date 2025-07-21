@@ -137,10 +137,9 @@ const GanttApp = ({ currentUser, onLogout }) => {
     }
     if (window.confirm('Tem certeza que deseja excluir esta tarefa?')) {
       try {
-        const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        const response = await fetch(`${API_URL}/tasks/${encodeURIComponent(currentUser)}/${taskId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentUser }),
         });
         if (!response.ok) {
           const errorData = await response.json();
@@ -252,7 +251,9 @@ const GanttApp = ({ currentUser, onLogout }) => {
     const taskPayload = { ...editingTask, owner: currentUser };
     const isEditing = !!taskPayload.id;
 
-    const url = isEditing ? `${API_URL}/tasks/${taskPayload.id}` : `${API_URL}/tasks`;
+    const url = isEditing 
+      ? `${API_URL}/tasks/${encodeURIComponent(currentUser)}/${taskPayload.id}` 
+      : `${API_URL}/tasks/${encodeURIComponent(currentUser)}`;
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
@@ -266,7 +267,7 @@ const GanttApp = ({ currentUser, onLogout }) => {
       closeModal();
       
       // Refetch tasks and reinitialize Gantt
-      await fetchTasks();
+      await fetchTasks(currentUser);
     } catch (error) {
       console.error("Failed to save task:", error);
       alert("Falha ao salvar a tarefa.");

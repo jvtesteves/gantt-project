@@ -23,10 +23,12 @@ router.get('/:username', optionalAuth, async (req, res) => {
 
     // Get tasks for the user
     const tasksResult = await db.query(`
-      SELECT id, name, start_date, end_date, progress, dependencies, created_at, updated_at
-      FROM tasks
-      WHERE user_id = $1
-      ORDER BY start_date ASC
+      SELECT t.id, t.name, t.start_date, t.end_date, t.progress, t.dependencies, 
+             t.created_at, t.updated_at, u.full_name, u.username
+      FROM tasks t
+      JOIN users u ON t.user_id = u.id
+      WHERE t.user_id = $1
+      ORDER BY t.start_date ASC
     `, [userId]);
 
     const tasks = tasksResult.rows.map(task => ({
@@ -36,6 +38,7 @@ router.get('/:username', optionalAuth, async (req, res) => {
       end: task.end_date.toISOString().split('T')[0],
       progress: task.progress,
       dependencies: task.dependencies,
+      owner: task.full_name || task.username, // Add owner field for frontend compatibility
       createdAt: task.created_at,
       updatedAt: task.updated_at
     }));

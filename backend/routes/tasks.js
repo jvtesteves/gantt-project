@@ -48,7 +48,7 @@ router.get('/:username', optionalAuth, async (req, res) => {
 });
 
 // Create a new task
-router.post('/:username', authenticateToken, async (req, res) => {
+router.post('/:username', optionalAuth, async (req, res) => {
   try {
     const { username } = req.params;
     const { name, start, end, progress = 0, dependencies = '' } = req.body;
@@ -71,9 +71,7 @@ router.post('/:username', authenticateToken, async (req, res) => {
 
     const userId = userResult.rows[0].id;
 
-    // Check if authenticated user can create tasks for this user
-    // For now, allow any authenticated user to create tasks for any user
-    // In a more secure setup, you might want to restrict this
+    // Allow task creation without authentication for backward compatibility
 
     // Create task
     const result = await db.query(`
@@ -104,7 +102,7 @@ router.post('/:username', authenticateToken, async (req, res) => {
 });
 
 // Update a task
-router.put('/:username/:taskId', authenticateToken, async (req, res) => {
+router.put('/:username/:taskId', optionalAuth, async (req, res) => {
   try {
     const { username, taskId } = req.params;
     const { name, start, end, progress, dependencies } = req.body;
@@ -197,7 +195,7 @@ router.put('/:username/:taskId', authenticateToken, async (req, res) => {
 });
 
 // Delete a task
-router.delete('/:username/:taskId', authenticateToken, async (req, res) => {
+router.delete('/:username/:taskId', optionalAuth, async (req, res) => {
   try {
     const { username, taskId } = req.params;
     const db = req.app.locals.db;

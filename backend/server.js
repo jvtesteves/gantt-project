@@ -24,7 +24,9 @@ app.use(cors({
     "http://gantt-v2-frontend-20250716212001.s3-website-us-east-1.amazonaws.com",
     "http://gantt-project-frontend-202507162041.s3-website-us-east-1.amazonaws.com"
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting

@@ -165,7 +165,7 @@ body {
 
 /* === GANTT CHART DARK THEME === */
 [data-theme="dark"] .gantt-container {
-    filter: brightness(0.9) contrast(1.1);
+    background-color: var(--bg-secondary) !important;
 }
 
 [data-theme="dark"] .gantt-container .grid-background {
@@ -182,6 +182,31 @@ body {
 
 [data-theme="dark"] .gantt-container text {
     fill: var(--text-primary) !important;
+}
+
+/* === GANTT BARS DARK THEME === */
+[data-theme="dark"] .gantt-container .bar-wrapper .bar {
+    opacity: 1 !important;
+    filter: brightness(1.2) saturate(1.1) !important;
+}
+
+[data-theme="dark"] .gantt-container .bar-wrapper .bar-progress {
+    opacity: 0.8 !important;
+    filter: brightness(1.1) !important;
+}
+
+[data-theme="dark"] .gantt-container .bar-wrapper .bar-label {
+    fill: var(--text-primary) !important;
+    font-weight: 500 !important;
+}
+
+/* === GANTT GRID LINES === */
+[data-theme="dark"] .gantt-container .tick {
+    stroke: var(--border-color) !important;
+}
+
+[data-theme="dark"] .gantt-container .today-highlight {
+    fill: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* === ANIMATIONS === */

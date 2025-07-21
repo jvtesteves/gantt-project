@@ -83,6 +83,32 @@ body {
 .gantt-card-body {
     max-height: 65vh;
     overflow: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* === GANTT CONTAINER IMPROVEMENTS === */
+.gantt-container {
+    width: 100%;
+    min-height: 400px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for Gantt internal scrolling */
+.gantt-container .gantt {
+    overflow: visible !important;
+}
+
+.gantt-container .gantt .grid-background {
+    pointer-events: none;
+}
+
+.gantt-container .gantt .grid-header,
+.gantt-container .gantt .grid-rows {
+    overflow: visible !important;
 }
 
 /* === CARD STYLES === */

@@ -137,13 +137,15 @@ const GanttApp = ({ currentUser, onLogout }) => {
         const response = await fetch(`${API_URL}/tasks/${taskId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentUser }), // Send currentUser in the body
+          body: JSON.stringify({ currentUser }),
         });
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Falha ao excluir a tarefa.');
         }
-        fetchTasks(); // Refetch tasks after deleting
+        
+        // Refetch tasks and reinitialize Gantt
+        await fetchTasks();
       } catch (error) {
         console.error("Failed to delete task:", error);
         alert(error.message);
@@ -155,37 +157,65 @@ const GanttApp = ({ currentUser, onLogout }) => {
     ? tasks.filter(t => t.owner === currentUser)
     : tasks.map(t => ({ ...t, name: `[${t.owner}] ${t.name}` }));
 
-  useEffect(() => {
-    if (ganttRef.current && tasksToDisplay.length > 0) {
-      if (!ganttInstance.current) {
-        // Initialize Gantt only once
-        ganttInstance.current = new Gantt(ganttRef.current, tasksToDisplay, {
-          on_click: (task) => {
-            setTimeout(() => {
-              const popup = document.querySelector('.gantt-popup');
-              if (!popup || popup.querySelector('.btn')) return;
-              
-              const originalTask = tasks.find(t => t.id === task.id);
-              if (!originalTask || originalTask.owner !== currentUser) return;
-
-              const customActions = document.createElement('div');
-              customActions.className = 'p-2 border-top mt-2 d-flex justify-content-end';
-              customActions.innerHTML = `<button class="btn btn-sm btn-primary me-2">Editar</button><button class="btn btn-sm btn-danger">Excluir</button>`;
-              customActions.querySelector('.btn-primary').onclick = () => openModalToEdit(originalTask);
-              customActions.querySelector('.btn-danger').onclick = () => handleDelete(task.id);
-              popup.appendChild(customActions);
-            }, 0);
-          },
-          custom_popup_html: (task) => `<div class="p-2"><h5>${task.name}</h5><p class="mb-0">Progresso: ${task.progress}%</p></div>`
-        });
-        // Set initial view mode
-        ganttInstance.current.change_view_mode(ganttViewMode);
-      } else {
-        // Refresh Gantt data when tasks change
-        ganttInstance.current.refresh(tasksToDisplay);
+  const initializeGantt = useCallback(() => {
+    if (!ganttRef.current) return;
+    
+    // Clean up existing instance
+    if (ganttInstance.current) {
+      try {
+        ganttInstance.current = null;
+      } catch (error) {
+        console.warn('Error cleaning up Gantt instance:', error);
       }
     }
-  }, [tasksToDisplay, handleDelete, openModalToEdit, tasks, currentUser, ganttViewMode]);
+    
+    // Clear the container
+    if (ganttRef.current) {
+      ganttRef.current.innerHTML = '';
+    }
+    
+    // Only initialize if we have tasks
+    if (tasksToDisplay.length === 0) {
+      return;
+    }
+    
+    try {
+      ganttInstance.current = new Gantt(ganttRef.current, tasksToDisplay, {
+        on_click: (task) => {
+          setTimeout(() => {
+            const popup = document.querySelector('.gantt-popup');
+            if (!popup || popup.querySelector('.btn')) return;
+            
+            const originalTask = tasks.find(t => t.id === task.id);
+            if (!originalTask || originalTask.owner !== currentUser) return;
+
+            const customActions = document.createElement('div');
+            customActions.className = 'p-2 border-top mt-2 d-flex justify-content-end';
+            customActions.innerHTML = `<button class="btn btn-sm btn-primary me-2">Editar</button><button class="btn btn-sm btn-danger">Excluir</button>`;
+            customActions.querySelector('.btn-primary').onclick = () => openModalToEdit(originalTask);
+            customActions.querySelector('.btn-danger').onclick = () => handleDelete(task.id);
+            popup.appendChild(customActions);
+          }, 0);
+        },
+        custom_popup_html: (task) => `<div class="p-2"><h5>${task.name}</h5><p class="mb-0">Progresso: ${task.progress}%</p></div>`
+      });
+      
+      // Set view mode
+      ganttInstance.current.change_view_mode(ganttViewMode);
+    } catch (error) {
+      console.error('Error initializing Gantt:', error);
+      ganttInstance.current = null;
+    }
+  }, [tasksToDisplay, tasks, currentUser, ganttViewMode, handleDelete, openModalToEdit]);
+
+  useEffect(() => {
+    // Debounce the Gantt initialization to avoid rapid re-renders
+    const timeoutId = setTimeout(() => {
+      initializeGantt();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [initializeGantt]);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -207,8 +237,11 @@ const GanttApp = ({ currentUser, onLogout }) => {
         body: JSON.stringify(taskPayload),
       });
       if (!response.ok) throw new Error('Network response was not ok');
-      fetchTasks(); // Refetch tasks to get the latest state
+      
       closeModal();
+      
+      // Refetch tasks and reinitialize Gantt
+      await fetchTasks();
     } catch (error) {
       console.error("Failed to save task:", error);
       alert("Falha ao salvar a tarefa.");

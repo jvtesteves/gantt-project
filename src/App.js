@@ -202,6 +202,28 @@ const GanttApp = ({ currentUser, onLogout }) => {
       
       // Set view mode
       ganttInstance.current.change_view_mode(ganttViewMode);
+      
+      // Disable horizontal scroll date navigation
+      setTimeout(() => {
+        const ganttContainer = ganttRef.current;
+        if (ganttContainer) {
+          // Find the SVG container
+          const svgElement = ganttContainer.querySelector('svg');
+          if (svgElement) {
+            // Prevent wheel events on the SVG from changing dates
+            svgElement.addEventListener('wheel', (e) => {
+              // Only prevent horizontal scroll (shift+wheel or trackpad horizontal)
+              if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Allow normal container scrolling instead
+                ganttContainer.scrollLeft += e.deltaX;
+              }
+            }, { passive: false });
+          }
+        }
+      }, 100);
     } catch (error) {
       console.error('Error initializing Gantt:', error);
       ganttInstance.current = null;
